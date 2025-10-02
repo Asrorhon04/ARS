@@ -196,7 +196,7 @@
       let roundedSlope = roundToPositiveTenth(avgSlope);
 
       document.getElementById("result").innerText =
-        `Средний приведённый уклон = ${avgSlope.toFixed(3)} ‰\nОкруглённый = ${avgSlope.toFixed(1)} ‰`;
+        `Средний приведённый уклон = ${avgSlope.toFixed(3)} ‰\nОкруглённый = ${roundedSlope.toFixed(1)} ‰`;
 
       generateResultTable(roundedSlope);
     }
