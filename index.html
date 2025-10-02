@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Средний приведённый уклон</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background: #f7f9fc;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    input {
+      padding: 8px;
+      width: 150px;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 6px 12px;
+      border: none;
+      background: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .small-btn {
+      padding: 4px 8px;
+      margin-left: 5px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      text-align: center;
+      padding: 6px;
+    }
+    th {
+      background: #e9f5ee;
+    }
+    #result {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+      text-align: center;
+      white-space: pre-line;
+    }
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Расчёт среднего приведённого уклона</h1>
+
+  <div class="card">
+    <h2>Добавить участок</h2>
+    <input type="text" id="slopeInput" placeholder="Уклон (‰)">
+    <input type="text" id="lengthInput" placeholder="Длина (м)">
+    <button onclick="addPair()">Добавить</button>
+    <table id="pairTable">
+      <tr><th>№</th><th>Уклон (‰)</th><th>Длина (м)</th><th>Действия</th></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="actions">
+      <button onclick="calculate()">Рассчитать средний уклон</button>
+      <button style="background:#e74c3c;" onclick="clearTable()">Очистить таблицу</button>
+    </div>
+    <div id="result"></div>
+    <table id="resultTable"></table>
+  </div>
+
+  <script>
+    let pairs = []; 
+    const slopeInput = document.getElementById("slopeInput");
+    const lengthInput = document.getElementById("lengthInput");
+
+    // Добавление участка
+    function addPair() {
+      let slopeVal = slopeInput.value.trim().replace(",", ".");
+      let lengthVal = lengthInput.value.trim().replace(",", ".");
+      const slope = parseFloat(slopeVal);
+      const length = parseFloat(lengthVal);
+
+      if (!isNaN(slope) && !isNaN(length)) {
+        pairs.push({ slope, length });
+        updateTable();
+        slopeInput.value = "";
+        lengthInput.value = "";
+        slopeInput.focus();
+      }
+    }
+
+    // Таблица участков
+    function updateTable() {
+      const table = document.getElementById("pairTable");
+      table.innerHTML = "<tr><th>№</th><th>Уклон (‰)</th><th>Длина (м)</th><th>Действия</th></tr>";
+      pairs.forEach((p, i) => {
+        table.innerHTML += `
+          <tr>
+            <td>${i+1}</td>
+            <td>${p.slope}</td>
+            <td>${p.length}</td>
+            <td>
+              <button class="small-btn" onclick="editPair(${i})">✏️</button>
+              <button class="small-btn" onclick="deletePair(${i})">❌</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    // Редактирование
+    function editPair(index) {
+      let newSlope = prompt("Измените уклон (‰):", String(pairs[index].slope));
+      if (newSlope !== null) {
+        newSlope = newSlope.replace(",", ".").trim();
+        const parsedSlope = parseFloat(newSlope);
+        if (!isNaN(parsedSlope)) pairs[index].slope = parsedSlope;
+        else alert("Некорректное число уклона");
+      }
+
+      let newLength = prompt("Измените длину (м):", String(pairs[index].length));
+      if (newLength !== null) {
+        newLength = newLength.replace(",", ".").trim();
+        const parsedLength = parseFloat(newLength);
+        if (!isNaN(parsedLength)) pairs[index].length = parsedLength;
+        else alert("Некорректное число длины");
+      }
+      updateTable();
+    }
+
+    // Удаление
+    function deletePair(index) {
+      pairs.splice(index, 1);
+      updateTable();
+    }
+
+    // Очистка
+    function clearTable() {
+      pairs = [];
+      updateTable();
+      document.getElementById("result").innerText = "";
+      document.getElementById("resultTable").innerHTML = "";
+      slopeInput.focus();
+    }
+
+    // округление до десятых в большую сторону и перевод в положительное
+    function roundToPositiveTenth(num) {
+      return Math.ceil(Math.abs(num) * 10) / 10;
+    }
+
+    // Расчёт среднего уклона
+    function calculate() {
+      if (pairs.length === 0) {
+        document.getElementById("result").innerText = "Ошибка: нет данных!";
+        return;
+      }
+
+      let sum = 0;
+      let totalLength = 0;
+      for (let i = 0; i < pairs.length; i++) {
+        sum += pairs[i].slope * pairs[i].length;
+        totalLength += pairs[i].length;
+      }
+      let avgSlope = sum / totalLength;
+      let roundedSlope = roundToPositiveTenth(avgSlope);
+
+      document.getElementById("result").innerText =
+        `Средний приведённый уклон = ${avgSlope.toFixed(3)} ‰\nОкруглённый = ${avgSlope.toFixed(1)} ‰`;
+
+      generateResultTable(roundedSlope);
+    }
+
+    // Генерация таблицы с диапазонами
+    function generateResultTable(slope) {
+      const table = document.getElementById("resultTable");
+      table.innerHTML = "<tr><th>Уклон (‰)</th><th>Башмаки</th><th>Оси (однородный)</th><th>Оси (смешанный)</th></tr>";
+
+      if (slope <= 0.5) {
+        table.innerHTML += `
+          <tr>
+            <td>${slope.toFixed(1)}</td>
+            <td>1</td>
+            <td>С обеих сторон</td>
+            <td>С обеих сторон</td>
+          </tr>`;
+        return;
+      }
+
+      let maxAxles = 400;
+      let homogRanges = {};
+      let mixedRanges = {};
+
+      for (let axles = 4; axles <= maxAxles; axles += 4) {
+        let homog = Math.ceil(axles*(slope*1.5 + 1) / 200);
+        let mixed = Math.ceil(axles*(slope*4 + 1) / 200);
+
+        if (slope > 0.5 && slope <= 1) {
+          homog += " +1 с противоположной";
+          mixed += " +1 с противоположной";
+        }
+
+        if (!homogRanges[homog]) homogRanges[homog] = { start: axles, end: axles };
+        else homogRanges[homog].end = axles;
+
+        if (!mixedRanges[mixed]) mixedRanges[mixed] = { start: axles, end: axles };
+        else mixedRanges[mixed].end = axles;
+      }
+
+      const allKeys = new Set([...Object.keys(homogRanges), ...Object.keys(mixedRanges)]);
+      allKeys.forEach(k => {
+        let homog = homogRanges[k] ? `${homogRanges[k].start}–${homogRanges[k].end}` : "-";
+        let mixed = mixedRanges[k] ? `${mixedRanges[k].start}–${mixedRanges[k].end}` : "-";
+
+        table.innerHTML += `
+          <tr>
+            <td>${slope.toFixed(1)}</td>
+            <td>${k}</td>
+            <td>${homog}</td>
+            <td>${mixed}</td>
+          </tr>`;
+      });
+    }
+
+    // ввод по Enter
+    slopeInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        lengthInput.focus();
+      }
+    });
+    lengthInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addPair();
+      }
+    });
+
+    slopeInput.focus();
+  </script>
+</body>
+</html>
